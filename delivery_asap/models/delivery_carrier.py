@@ -109,13 +109,13 @@ class Delivery_Asap(models.Model):
                data_envio["request_later_time"] =  picking.request_later_time
                        
         payload = json.dumps(data_envio)
-        with open('/home/odoo/src/user/envio.txt', 'w') as temp_file:
-            temp_file.write("%s\n" % data_envio)
+        #with open('/home/odoo/src/user/envio.txt', 'w') as temp_file:
+        #    temp_file.write("%s\n" % data_envio)
 
         response = requests.request("POST", url, headers= headers, data=payload)
         response = response.json()
-        with open('/home/odoo/src/user/respenvio.txt', 'w') as temp_file:
-            temp_file.write("%s\n" % response)
+        #with open('/home/odoo/src/user/respenvio.txt', 'w') as temp_file:
+        #    temp_file.write("%s\n" % response)
         try:    
             if response['status']:
                picking.carrier_tracking_ref= response['result']['delivery_id']
@@ -163,8 +163,8 @@ class Delivery_Asap(models.Model):
         
         
         response_body = response.json()
-        with open('/home/odoo/src/user/envio.txt', 'w') as temp_file:
-            temp_file.write("%s\n" % response_body)
+       # with open('/home/odoo/src/user/envio.txt', 'w') as temp_file:
+       #     temp_file.write("%s\n" % response_body)
         try:
             if response_body['status']:
                 return response_body['tracking_link']
@@ -197,8 +197,8 @@ class Delivery_Asap(models.Model):
         #request = request.get('https://goasap.dev/ecommerce/v2/api/cancel', data=values, headers=self._headers)
         #response = requests.request("POST", 'https://goasap.dev/ecommerce/v2/api/cancel', headers=self._headers, data=values)  
             response_body = response.json()
-            with open('/home/odoo/src/user/cancela_envio.txt', 'w') as temp_file:
-                temp_file.write("%s\n" % response.text)
+            #with open('/home/odoo/src/user/cancela_envio.txt', 'w') as temp_file:
+            #    temp_file.write("%s\n" % response.text)
         
             if response_body['flag']:
                picking.message_post(body=f'El envio #{picking.carrier_tracking_ref} ha sido cancelado')
@@ -248,8 +248,8 @@ class Delivery_Asap(models.Model):
               response = requests.request("GET", url, headers = headers, data=payload)  
             
               response = response.json()  
-              with open('/home/odoo/src/user/status.txt', 'w') as temp_file:
-                    temp_file.write("%s\n" % response)
+              #with open('/home/odoo/src/user/status.txt', 'w') as temp_file:
+              #      temp_file.write("%s\n" % response)
    
               return response['delivery_status']
               

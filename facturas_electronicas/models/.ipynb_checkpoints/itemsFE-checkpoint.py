@@ -263,7 +263,7 @@ class Lineas_factura(models.Model):
             result.append(salida)
             
             #para debug no usar en produccion
-            with open('/home/odoo/src/user/itemfact2.txt', 'w') as temp_file:
-                temp_file.write("%s\n" % result)    
+            #with open('/home/odoo/src/user/itemfact2.txt', 'w') as temp_file:
+            #    temp_file.write("%s\n" % result)    
                 
         return result

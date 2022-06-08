@@ -15,7 +15,10 @@ class Factrec(models.Model):
         documento=dict()
         if not POS:
             for factura in self.reversed_entry_id:
-                offset = factura.user_id.tz_offset
+                if len(factura.user_id) > 0:
+                   offset = factura.user_id.tz_offset
+                else:
+                   offset = '-0500'
                 documento["fechaEmisionDocFiscalReferenciado"] =  factura.create_date.strftime("%Y-%m-%dT%H:%M:%S") + offset[0:3] + ':' + offset[3:5]
                 documento["cufeFEReferenciada"] = factura.cufe
                 documento["nroFacturaPapel"] = '' #no se informa por ser factura electronica
@@ -24,7 +27,11 @@ class Factrec(models.Model):
         else:
             my_pos=self.convierte_correl(self.invoice_origin)
             ncpos=self.env['pos.order'].search([('name','=', my_pos)])
-            offset = ncpos.user_id.tz_offset
+            if ncpos.user_id:
+                offset = ncpos.user_id.tz_offset
+            else:
+                offset = '-0500'
+
             documento["fechaEmisionDocFiscalReferenciado"] =  ncpos.create_date.strftime("%Y-%m-%dT%H:%M:%S") + offset[0:3] + ':' + offset[3:5]
             documento["cufeFEReferenciada"] = ncpos.account_move.cufe
             result.append(documento)

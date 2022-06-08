@@ -11,7 +11,7 @@
              <xpath expr="//field[@name='is_return_picking']" position="move"/>
           </xpath>
           <xpath expr="//form[1]/sheet[1]/notebook[1]" position="inside">
-           <page string="Info Adicional ASAP" name="studio_page_Bksey" attrs="{&quot;invisible&quot;: [[&quot;sale_id&quot;,&quot;!=&quot;,False]]}">
+           <page string="Info Adicional ASAP" name="studio_page_Bksey" attrs="{'invisible': ['|',('picking_type_code','=','incoming'),('carrier_id','=',False)]}">
              <group name="studio_group_Bksey">
                <group name="studio_group_Bksey_left" attrs="{}">
                  <field name="special_inst"/>

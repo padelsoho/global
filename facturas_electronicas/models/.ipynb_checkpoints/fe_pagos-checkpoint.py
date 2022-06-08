@@ -27,7 +27,11 @@ class totaliza(models.Model):
         factura_objeto=self.env['account.move'].sudo().search([('name','=', self.name)])
         fecha_vencimiento_factura = factura_objeto.invoice_date_due
         total = self.valorTotal 
-        offset = factura_objeto.user_id.tz_offset
+        if len(factura_objeto.user_id) > 0:
+            offset = factura_objeto.user_id.tz_offset
+        else:
+            offset = '-0500'
+
         lista_pagos=[]
         if toma_fecha:
             fecha_vencimiento = fecha_vencimiento_factura

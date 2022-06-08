@@ -3,20 +3,20 @@
     'name': "Facturas Electronicas PA",
 
     'summary': """
-        Modulo para procesamiento de Facturas Electrónicas en Panamá""",
+        """,
 
     'description': """
-        Long description of module's purpose
+         Integración con EBI para la generación de facturas electrónicas en Panamá.
     """,
 
-    'author': "JC",
-    'website': "http://www.demo.com",
+    'author': "THAVAS",
+    'website': "http://www.thavasconsultoria.com/odoo",
 
     # Categories can be used to filter modules in modules listing
     # Check https://github.com/odoo/odoo/blob/14.0/odoo/addons/base/data/ir_module_category_data.xml
     # for the full list
     'category': 'Retail',
-    'version': '0.1.2',
+    'version': '15.0.1.3',
 
     # any module necessary for this one to work correctly
     'depends': ['base','account','contacts','sale_management','stock'],

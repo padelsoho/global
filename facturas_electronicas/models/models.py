@@ -148,13 +148,14 @@ class facturas_electronicas(models.Model):
         factura=factura[0]
 
         #convertir fecha  de la factura usando el timezone del usuario   
-        id_usuario = factura['invoice_user_id'][0]    
-        zona_horaria = self.env['res.users'].sudo().search_read([('id','=', id_usuario)],['tz'])  
-        zona_horaria = zona_horaria[0]['tz']
-        
-        timeZ_user = pytz.timezone(zona_horaria)
-        offset = datetime.datetime.now(datetime.timezone.utc).astimezone(timeZ_user).strftime('%z')
-       
+        if factura['invoice_user_id']:
+            id_usuario = factura['invoice_user_id'][0]    
+            zona_horaria = self.env['res.users'].sudo().search_read([('id','=', id_usuario)],['tz'])  
+            zona_horaria = zona_horaria[0]['tz']
+            timeZ_user = pytz.timezone(zona_horaria)
+            offset = datetime.datetime.now(datetime.timezone.utc).astimezone(timeZ_user).strftime('%z')
+        else:
+            offset = '-0500'
         fecha_factura = factura_objeto.create_date.strftime("%Y-%m-%dT%H:%M:%S") + offset[0:3] + ':' + offset[3:5] 
         #revisar
         fechaSalida = factura["fechaSalida"].strftime("%Y-%m-%dT%H:%M:%S") + offset[0:3] + ':' + offset[3:5]  if factura["fechaSalida"] else ''
@@ -202,12 +203,15 @@ class facturas_electronicas(models.Model):
         
         #no se comtempla en la version inicial (consultar)    
         
+        #si viene del ecommerce user_id es False y no se proces logistica
+        #nota de credito no necesita logistica solo la fcatura de venta
+        if len(factura_objeto.user_id) > 0:
         
-        if (factura_objeto.invoice_origin and len(self.env['pos.order'].search([('name','=', factura_objeto.invoice_origin)])) == 0) and factura_objeto.destinoOperacion =='1' :
+            if (factura_objeto.invoice_origin and len(self.env['pos.order'].search([('name','=', factura_objeto.invoice_origin)])) == 0) and factura_objeto.destinoOperacion =='1'  and factura_objeto.move_type == 'out_invoice':
            
-           datos['documento']['infoLogistica']= self.env["stock.picking"].dict_logistica(self.name,factura['invoice_origin'])
+               datos['documento']['infoLogistica']= self.env["stock.picking"].dict_logistica(self.name,factura['invoice_origin'])
             
-          # datos['documento']['infoEntrega']= self.env["stock.picking"].dict_entrega(self.name,factura['invoice_origin'])
+              #datos['documento']['infoEntrega']= self.env["stock.picking"].dict_entrega(self.name,factura['invoice_origin'])
         
 
         if factura_objeto.autorizados:
@@ -221,15 +225,18 @@ class facturas_electronicas(models.Model):
         if factura_objeto.tipoDocumento in ['04','05']:
            
            datos['documento']['datosTransaccion']['listaDocsFiscalReferenciados'] =''
-           if factura_objeto.invoice_origin: 
+        
+           #facturas de ecommerce deben ser tartadas como factura normal a psar de tener invoice origin
+        
+           if factura_objeto.invoice_origin and len(factura_objeto.user_id) > 0 and factura.ref !='': 
               datos['documento']['datosTransaccion']['listaDocsFiscalReferenciados'] = dict(docFiscalReferenciado = factura_objeto.doc_referenciados_dict(True))
            else:
               datos['documento']['datosTransaccion']['listaDocsFiscalReferenciados'] = dict(docFiscalReferenciado = factura_objeto.doc_referenciados_dict())
 
         
         #para debug no usar en produccion
-        with open('/home/odoo/src/user/datos.txt', 'w') as temp_file:
-            temp_file.write("%s\n" % datos)
+        #with open('/home/odoo/src/user/datos.txt', 'w') as temp_file:
+        #    temp_file.write("%s\n" % datos)
 
         #wsdl = 'http://demointegracion.ebi-pac.com/ws/obj/v1.0/Service.svc?singleWsdl'
         wsdl = url_a_usar
@@ -239,8 +246,8 @@ class facturas_electronicas(models.Model):
         self.fecha_envio_pac= datetime.datetime.now()
         
         #para debug no usar en produccion
-        with open('/home/odoo/src/user/respuestahoy.txt', 'w') as temp_file:
-            temp_file.write("%s\n" % response)
+        #with open('/home/odoo/src/user/respuestahoy.txt', 'w') as temp_file:
+        #    temp_file.write("%s\n" % response)
         
         #grabar factura
         self.chequear_resultado(response)
@@ -277,7 +284,8 @@ class facturas_electronicas(models.Model):
                 item.unlink()
 
         for fact in facturas:
-             fact['invoice_user_id'] = fact['invoice_user_id'][0]
+             if fact['invoice_user_id']: #revisar, en website da false
+               fact['invoice_user_id'] = fact['invoice_user_id'][0]
              fact['partner_id'] =   fact['partner_id'][0]
              fact['amount_untaxed'] = "{:5.3f}".format(fact['amount_untaxed'])
              self.env['facturas_electronicas.facturas_electronicas'].create(fact)
@@ -363,15 +371,13 @@ class doce(models.Model):
     resultado = fields.Char(string='Resultado', readonly = True)
     
     def convierte_correl(self,correl):
-        lista = list(correl)
-        result=[]
-        for i in range(len(lista)):
-            if i > 0:
-                if lista[i-1].isdigit() and not lista[i].isdigit():
-                    break
-            result.append(lista[i])    
-            
-        result="".join(result)
+        prefijo = correl.split('/')[0]
+        lista= list(correl.split('/')[1])
+        result=''
+        for m in lista:
+          if m.isdigit():
+            result= result + m
+        result= prefijo + '/' + result
         return result    
 
     
@@ -415,9 +421,10 @@ class doce(models.Model):
                 elif factura_referenciada[-1].refund_method =='refund':
                     respuesta['naturalezaOperacion'] ='21'                                               
                 factura_objeto.write(respuesta)                                                                        
-           if factura_objeto.invoice_origin and factura_objeto.move_type == 'out_refund':
+           if factura_objeto.invoice_origin and factura_objeto.move_type == 'out_refund' and factura_objeto.ref !='':
                respuesta['tipoDocumento']='04' 
-               pos=self.convierte_correl(factura_objeto.invoice_origin)
+               #pos=self.convierte_correl(factura_objeto.invoice_origin)
+               pos=factura_objeto.invoice_origin
                ncpos=self.env['pos.order'].search([('name','=', pos)])
                if factura_objeto.amount_total ==  abs(ncpos.amount_total):
                   respuesta['naturalezaOperacion']='11'

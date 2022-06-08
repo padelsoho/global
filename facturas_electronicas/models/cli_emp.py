@@ -53,8 +53,17 @@ class cliente(models.Model):
         cliente = self.env['res.partner'].sudo().search([('id','=',cliente_actual)])
         result = dict(tipoClienteFE =  cliente.tipoClienteFE,tipoContribuyente = 2 if cliente.company_type =='company' else 1 , numeroRUC =  cliente.vat)
         
-        result['razonSocial'] =  cliente.display_name
-        
+        #se pone numero ruc en 123456 si nose coloca,sólo consumidor final
+        if not cliente.vat:
+            result['numeroRUC'] =  '123456'
+
+        #se pone cliente si no se coloca nonbre al cliente 
+        if cliente.display_name:
+           result['razonSocial'] =  cliente.display_name
+        else:    
+           result['razonSocial'] =  'Cliente'
+
+        #se coloca '02' consumidor final si no selecciona tipo de cliente
         if cliente.tipoClienteFE:
            result['tipoClienteFE'] =  cliente.tipoClienteFE
         else:
